@@ -12,12 +12,13 @@ Welcome to the **Visualizer Gallery**, a collection of interactive visual tools 
 - **AVL Tree**
 - **Red Black Tree**
 - **Binary Search Tree (BST)**
+....
 
 Each visualizer is accessible via the main homepage and comes with its own interactive interface.
 
 ## 🚀 How to Use
 
-1. Visit the [live website](https://codio-content.github.io/visualizers/)
+1. Visit the [live website](https://visualizers.codio.com)
 2. Choose a visualizer from the dropdown or sidebar
 3. Interact with the visual tool directly in your browser
 
