@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Improved BST Visualizer</title>
+    <style>
+        /* General body styling for a modern look */
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, "Open Sans", "Helvetica Neue", sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background-color: #f7f9fc;
+            margin: 0;
+            padding: 20px;
+            color: #333;
+        }
+        /* Main container to manage layout */
+        #main-container {
+            width: 100%;
+            max-width: 1200px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        /* Styling for the control panel */
+        #controls {
+            background-color: #fff;
+            padding: 15px 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+            width: 100%;
+            max-width: 800px;
+            box-sizing: border-box;
+        }
+        /* Flexbox for aligning control groups */
+        .control-group {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin: 10px 0;
+        }
+        /* Input field styling */
+        input[type="number"] {
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            width: 120px;
+        }
+        /* General button styling */
+        button {
+            padding: 8px 15px;
+            cursor: pointer;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            transition: background-color 0.2s;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        /* Specific button colors for different actions */
+        button.delete { background-color: #dc3545; }
+        button.delete:hover { background-color: #c82333; }
+        button.search { background-color: #ffc107; color: #212529; }
+        button.search:hover { background-color: #e0a800; }
+        /* Container for the canvas to help with centering */
+        #canvas-container {
+            width: 100%;
+            display: flex;
+            justify-content: center;
+        }
+        /* Canvas styling */
+        #canvas {
+            border: 1px solid #ddd;
+            background-color: #fff;
+            border-radius: 8px;
+        }
+        /* Thought pattern display box */
+        #thought-pattern {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #e9ecef;
+            border-radius: 8px;
+            min-height: 50px;
+            width: 100%;
+            max-width: 800px;
+            box-sizing: border-box;
+            font-family: "Courier New", Courier, monospace;
+        }
+    </style>
+</head>
+<body>
+    <div id="main-container">
+        <h1>BST Visualizer</h1>
+        <div id="controls">
+            <div class="control-group">
+                <input type="number" id="valueInput" placeholder="Enter value" min="1" max="999">
+                <button onclick="insertNode()">Insert</button>
+                <button class="search" onclick="searchNode()">Search</button>
+                <button class="delete" onclick="deleteNode()">Delete</button>
+            </div>
+            <div class="control-group">
+                 <button onclick="generateRandomTree()">Random Tree</button>
+                 <button onclick="resetTree()">Reset</button>
+            </div>
+            <div class="control-group">
+                <label><input type="checkbox" id="showNull" onchange="drawTree()"> Show Null Nodes</label>
+                <label><input type="checkbox" id="showThought" onchange="toggleThoughtPattern()" checked> Show Thought Pattern</label>
+            </div>
+        </div>
+        <div id="canvas-container">
+            <canvas id="canvas" width="800" height="500"></canvas>
+        </div>
+        <div id="thought-pattern" style="display: block;"></div>
+    </div>
+
+    <script>
+        // --- DOM Element References ---
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        const showNullCheckbox = document.getElementById('showNull');
+        const showThoughtCheckbox = document.getElementById('showThought');
+        const thoughtPatternDiv = document.getElementById('thought-pattern');
+
+        // --- Node and BST Class Definitions ---
+        class Node {
+            constructor(value) {
+                this.value = value;
+                this.left = null;
+                this.right = null;
+            }
+        }
+
+        class BST {
+            constructor() {
+                this.root = null;
+                this.thoughts = []; // To log operations
+            }
+
+            // --- Core BST Operations ---
+            insert(value) {
+                this.thoughts = [`Attempting to insert ${value}...`];
+                const newNode = new Node(value);
+                if (!this.root) {
+                    this.root = newNode;
+                    this.thoughts.push(`Tree is empty. ${value} becomes the root.`);
+                    return;
+                }
+                this._insertNode(this.root, newNode);
+            }
+
+            _insertNode(node, newNode) {
+                if (newNode.value === node.value) {
+                    this.thoughts.push(`Value ${newNode.value} already exists. Insertion aborted.`);
+                    return; // Prevent duplicates
+                }
+                this.thoughts.push(`Comparing ${newNode.value} with ${node.value}.`);
+                if (newNode.value < node.value) {
+                    this.thoughts.push(`${newNode.value} < ${node.value}, moving to the left subtree.`);
+                    if (!node.left) {
+                        node.left = newNode;
+                        this.thoughts.push(`Found an empty spot. Inserting ${newNode.value}.`);
+                    } else {
+                        this._insertNode(node.left, newNode);
+                    }
+                } else {
+                    this.thoughts.push(`${newNode.value} > ${node.value}, moving to the right subtree.`);
+                    if (!node.right) {
+                        node.right = newNode;
+                        this.thoughts.push(`Found an empty spot. Inserting ${newNode.value}.`);
+                    } else {
+                        this._insertNode(node.right, newNode);
+                    }
+                }
+            }
+            
+            search(value) {
+                this.thoughts = [`Searching for ${value}...`];
+                return this._searchNode(this.root, value);
+            }
+
+            _searchNode(node, value) {
+                if (!node) {
+                    this.thoughts.push(`${value} not found in the tree.`);
+                    return null;
+                }
+                this.thoughts.push(`Comparing ${value} with ${node.value}.`);
+                if (value === node.value) {
+                    this.thoughts.push(`Found ${value}!`);
+                    return node;
+                }
+                if (value < node.value) {
+                    this.thoughts.push(`${value} < ${node.value}, searching in the left subtree.`);
+                    return this._searchNode(node.left, value);
+                } else {
+                    this.thoughts.push(`${value} > ${node.value}, searching in the right subtree.`);
+                    return this._searchNode(node.right, value);
+                }
+            }
+
+            delete(value) {
+                this.thoughts = [`Attempting to delete ${value}...`];
+                this.root = this._deleteNode(this.root, value);
+            }
+
+            _deleteNode(node, value) {
+                if (!node) {
+                    this.thoughts.push(`${value} not found in tree.`);
+                    return null;
+                }
+                this.thoughts.push(`Comparing ${value} with ${node.value}`);
+                if (value < node.value) {
+                    node.left = this._deleteNode(node.left, value);
+                } else if (value > node.value) {
+                    node.right = this._deleteNode(node.right, value);
+                } else {
+                    this.thoughts.push(`Found node with value ${value}.`);
+                    if (!node.left) {
+                        this.thoughts.push(`Node has no left child. Replaced with right child.`);
+                        return node.right;
+                    } else if (!node.right) {
+                        this.thoughts.push(`Node has no right child. Replaced with left child.`);
+                        return node.left;
+                    }
+                    this.thoughts.push(`Node has two children. Finding minimum in right subtree...`);
+                    const minNode = this._findMin(node.right);
+                    node.value = minNode.value;
+                    this.thoughts.push(`Replacing node's value with ${minNode.value}. Now deleting ${minNode.value} from the right subtree.`);
+                    node.right = this._deleteNode(node.right, minNode.value);
+                }
+                return node;
+            }
+
+            _findMin(node) {
+                let current = node;
+                while (current.left) {
+                    current = current.left;
+                }
+                return current;
+            }
+        }
+
+        // --- Global State ---
+        const bst = new BST();
+        let highlightedNode = null;
+
+        // --- UI Event Handlers ---
+        function handleOperation(operation) {
+            const valueInput = document.getElementById('valueInput');
+            const value = parseInt(valueInput.value);
+            if (isNaN(value)) {
+                alert('Please enter a valid number.');
+                return;
+            }
+            highlightedNode = null;
+            operation(value);
+            valueInput.value = '';
+            drawTree();
+            updateThoughtPattern();
+        }
+
+        function insertNode() {
+            handleOperation(value => bst.insert(value));
+        }
+        
+        function searchNode() {
+            handleOperation(value => {
+                highlightedNode = bst.search(value);
+            });
+        }
+
+        function deleteNode() {
+            handleOperation(value => bst.delete(value));
+        }
+        
+        function generateRandomTree() {
+            resetTree();
+            const numNodes = 10;
+            const values = new Set();
+            while(values.size < numNodes) {
+                values.add(Math.floor(Math.random() * 99) + 1);
+            }
+            bst.thoughts = [`Generating a random tree with ${numNodes} nodes...`];
+            values.forEach(value => bst.insert(value));
+            bst.thoughts = [];
+            drawTree();
+            updateThoughtPattern();
+        }
+
+        function resetTree() {
+            bst.root = null;
+            bst.thoughts = ["Tree has been reset."];
+            highlightedNode = null;
+            drawTree();
+            updateThoughtPattern();
+        }
+
+        function toggleThoughtPattern() {
+            thoughtPatternDiv.style.display = showThoughtCheckbox.checked ? 'block' : 'none';
+        }
+
+        function updateThoughtPattern() {
+            if (showThoughtCheckbox.checked) {
+                thoughtPatternDiv.innerHTML = bst.thoughts.join('<br>');
+            }
+        }
+
+        // --- Drawing Logic ---
+        function drawTree() {
+            const container = document.getElementById('main-container');
+            canvas.width = Math.min(container.clientWidth - 40, 1200);
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            if (!bst.root) return;
+
+            const nodePositions = new Map();
+            const inOrderNodes = [];
+            let nextX = 0;
+            const nodeRadius = 18;
+            const levelHeight = 70;
+
+            // Pass 1: Calculate X positions and get in-order sequence
+            function calculateNodePositions(node) {
+                if (!node) return;
+                calculateNodePositions(node.left);
+                inOrderNodes.push(node);
+                nodePositions.set(node, { x: nextX, y: 0 }); 
+                nextX += nodeRadius * 3;
+                calculateNodePositions(node.right);
+            }
+            calculateNodePositions(bst.root);
+
+            const nodeIndexMap = new Map(inOrderNodes.map((node, i) => [node, i]));
+            const totalWidth = nextX - nodeRadius * 3;
+            const xOffset = (canvas.width - totalWidth) / 2;
+
+            // Apply the centering offset to all nodes before drawing
+            for (const pos of nodePositions.values()) {
+                pos.x += xOffset;
+            }
+
+            // Pass 2: Draw all edges and null markers
+            function drawConnectionsRecursive(node, level) {
+                if (!node) return;
+
+                const pos = nodePositions.get(node);
+                pos.y = 50 + level * levelHeight;
+
+                // Draw left child connection
+                if (node.left) {
+                    const leftPos = nodePositions.get(node.left);
+                    leftPos.y = 50 + (level + 1) * levelHeight;
+                    ctx.beginPath();
+                    ctx.moveTo(pos.x, pos.y + nodeRadius);
+                    ctx.lineTo(leftPos.x, leftPos.y - nodeRadius);
+                    ctx.strokeStyle = '#999';
+                    ctx.stroke();
+                } else if (showNullCheckbox.checked) {
+                    drawNullChild(node, 'left');
+                }
+
+                // Draw right child connection
+                if (node.right) {
+                    const rightPos = nodePositions.get(node.right);
+                    rightPos.y = 50 + (level + 1) * levelHeight;
+                    ctx.beginPath();
+                    ctx.moveTo(pos.x, pos.y + nodeRadius);
+                    ctx.lineTo(rightPos.x, rightPos.y - nodeRadius);
+                    ctx.strokeStyle = '#999';
+                    ctx.stroke();
+                } else if (showNullCheckbox.checked) {
+                    drawNullChild(node, 'right');
+                }
+
+                drawConnectionsRecursive(node.left, level + 1);
+                drawConnectionsRecursive(node.right, level + 1);
+            }
+
+            // Pass 3: Draw all the nodes on top of the lines
+            function drawAllNodes() {
+                for (const node of inOrderNodes) {
+                    const pos = nodePositions.get(node);
+                    ctx.beginPath();
+                    ctx.arc(pos.x, pos.y, nodeRadius, 0, Math.PI * 2);
+                    
+                    if (highlightedNode === node) {
+                         ctx.fillStyle = '#ffc107';
+                         ctx.strokeStyle = '#333';
+                    } else {
+                        ctx.fillStyle = '#007bff';
+                        ctx.strokeStyle = '#0056b3';
+                    }
+                    
+                    ctx.fill();
+                    ctx.stroke();
+                    
+                    ctx.fillStyle = (highlightedNode === node) ? '#212529' : '#fff';
+                    ctx.font = '14px Arial';
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    ctx.fillText(node.value, pos.x, pos.y);
+                }
+            }
+            
+            function drawNullChild(parentNode, direction) {
+                const parentPos = nodePositions.get(parentNode);
+                const currentIndex = nodeIndexMap.get(parentNode);
+                let x;
+                const y = parentPos.y + levelHeight;
+                const nullNodeRadius = nodeRadius / 2;
+
+                if (direction === 'left') {
+                    if (currentIndex > 0) {
+                        const pred = inOrderNodes[currentIndex - 1];
+                        const predPos = nodePositions.get(pred);
+                        x = (predPos.x + parentPos.x) / 2;
+                    } else {
+                        x = parentPos.x - nodeRadius * 3.5;
+                    }
+                } else { // right
+                    if (currentIndex < inOrderNodes.length - 1) {
+                        const succ = inOrderNodes[currentIndex + 1];
+                        const succPos = nodePositions.get(succ);
+                        x = (succPos.x + parentPos.x) / 2;
+                    } else {
+                        x = parentPos.x + nodeRadius * 3.5;
+                    }
+                }
+                
+                ctx.beginPath();
+                ctx.moveTo(parentPos.x, parentPos.y + nodeRadius);
+                ctx.lineTo(x, y - nullNodeRadius);
+                ctx.strokeStyle = '#ccc';
+                ctx.stroke();
+
+                ctx.beginPath();
+                ctx.arc(x, y, nullNodeRadius, 0, Math.PI * 2);
+                ctx.fillStyle = '#ccc';
+                ctx.fill();
+            }
+
+            drawConnectionsRecursive(bst.root, 0);
+            drawAllNodes();
+        }
+        
+        // --- Initial Setup ---
+        window.addEventListener('resize', drawTree);
+        generateRandomTree();
+        toggleThoughtPattern();
+    </script>
+</body>
+</html>

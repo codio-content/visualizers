@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>BST vs Red-Black Tree Visualizer with Debug</title>
+  <script src="https://cdn.jsdelivr.net/npm/vis-network@9.1.2/standalone/umd/vis-network.min.js"></script>
+  <link rel="stylesheet" href="style.css"> </head>
+<body>
+  <h2>BST vs Red-Black Tree Visualizer</h2>
+
+  <details class="info-box">
+    <summary>📘 Red-Black Tree Rules</summary>
+    <ul>
+      <li><strong>1. Each node is either red or black.</strong></li>
+      <li><strong>2. The root is always black.</strong></li>
+      <li><strong>3. All leaves (NIL/null nodes) are black.</strong></li>
+      <li><strong>4. Red nodes cannot have red children (no two reds in a row).</strong></li>
+      <li><strong>5. Every path from a node to its descendant NIL nodes must have the same number of black nodes.</strong></li>
+    </ul>
+  </details>
+
+  <div id="controls">
+    <input id="treeInput" type="text" placeholder="62(BLACK) 33(BLACK) 57(RED) 75(RED) 67(BLACK) 129(BLACK) 80(RED)" aria-label="Enter tree nodes and colors" />
+    <button id="visualizeBtn">Visualize</button>
+    <div class="toggle-group">
+      <input type="checkbox" id="showNulls" />
+      <label for="showNulls">Show NIL Leaves</label>
+    </div>
+    <div class="toggle-group">
+      <input type="checkbox" id="showDebug" />
+      <label for="showDebug">Show Debug Output</label>
+    </div>
+  </div>
+
+  <div id="containerWrapper">
+    <div class="tree-section">
+      <h3>BST (Input Order + Colors)</h3>
+      <div id="bstContainer" class="tree-box"></div>
+    </div>
+    <div class="tree-section">
+      <h3>Red-Black Tree (Balanced)</h3>
+      <div id="rbtContainer" class="tree-box"></div>
+    </div>
+  </div>
+
+  <div id="debugLog" class="debug-log-hidden"></div> <script src="script.js"></script> </body>
+</html>

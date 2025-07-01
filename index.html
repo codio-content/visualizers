@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Visualizers Gallery</title>
+  <link rel="icon" href="assets/logo.png" />
+
+  <!-- Google Font -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+
+  <style>
+    :root {
+      --bg-dark: #0a0a0a;
+      --white-tone: rgba(255,255,255,0.05);
+      --accent: #3b82f6;
+      --text-light: #f1f1f1;
+      --radius: 12px;
+      --sidebar-width: 220px;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: var(--bg-dark);
+      color: var(--text-light);
+      display: flex;
+      min-height: 100vh;
+    }
+
+    /* Sidebar list of visualizers */
+    .sidebar {
+      width: var(--sidebar-width);
+      background: var(--white-tone);
+      backdrop-filter: blur(8px);
+      padding: 1rem;
+      overflow-y: auto;
+    }
+    .sidebar h2 {
+      font-size: 1.25rem;
+      margin-bottom: 1rem;
+      color: var(--accent);
+      text-align: center;
+    }
+    .sidebar ul {
+      list-style: none;
+    }
+    .sidebar li {
+      padding: 0.5rem 0.75rem;
+      cursor: pointer;
+      border-radius: var(--radius);
+      transition: background 0.2s;
+      color: var(--text-light);
+    }
+    .sidebar li:hover,
+    .sidebar li.active {
+      background: var(--accent);
+    }
+
+    /* Main card */
+    .main {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 2rem;
+    }
+    .card {
+      background: var(--white-tone);
+      backdrop-filter: blur(8px);
+      border-radius: var(--radius);
+      padding: 2.5rem;
+      width: 100%;
+      max-width: 450px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.7);
+      text-align: center;
+    }
+    .logo {
+      width: 80px;
+      margin: 0 auto 1rem;
+      display: block;
+    }
+    h1 {
+      font-size: 1.75rem;
+      font-weight: 600;
+      margin-bottom: 1.5rem;
+      color: var(--accent);
+    }
+
+    .search-input,
+    .dropdown-toggle,
+    .go-btn {
+      width: 100%;
+      padding: 0.75rem 1rem;
+      margin-bottom: 1rem;
+      background: #111;
+      border: 1px solid var(--accent);
+      border-radius: var(--radius);
+      color: var(--text-light);
+      font-size: 1rem;
+    }
+    .go-btn {
+      background: var(--accent);
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .go-btn:hover {
+      background: #2563eb;
+    }
+
+    .dropdown {
+      position: relative;
+      margin-bottom: 1rem;
+    }
+    .dropdown-toggle {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      cursor: pointer;
+    }
+    .dropdown-toggle:after {
+      content: '▾';
+      font-size: 0.8rem;
+    }
+    .dropdown.open .dropdown-toggle:after {
+      transform: rotate(180deg);
+    }
+    .dropdown-menu {
+      position: absolute;
+      top: 110%;
+      left: 0;
+      width: 100%;
+      max-height: 180px;
+      overflow-y: auto;
+      background: #111;
+      border: 1px solid var(--accent);
+      border-radius: var(--radius);
+      z-index: 10;
+      display: none;
+    }
+    .dropdown.open .dropdown-menu {
+      display: block;
+    }
+    .dropdown-menu li {
+      list-style: none;
+      padding: 0.75rem 1rem;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .dropdown-menu li:hover,
+    .dropdown-menu li.active {
+      background: rgba(59,130,246,0.2);
+    }
+
+    /* Footer */
+    footer {
+      position: fixed;
+      bottom: 0;
+      left: var(--sidebar-width);
+      right: 0;
+      text-align: center;
+      padding: 0.5rem;
+      font-size: 0.85rem;
+      background: rgba(0,0,0,0.3);
+      color: var(--text-light);
+    }
+  </style>
+</head>
+<body>
+  <aside class="sidebar">
+    <h2>Visualizers</h2>
+    <ul id="sideList"></ul>
+  </aside>
+
+  <main class="main">
+    <div class="card">
+      <img src="assets/logo.png" alt="Logo" class="logo" />
+      <h1>Select Visualizer</h1>
+
+      <input type="text" id="search" class="search-input" placeholder="Search…" />
+
+      <div class="dropdown" id="dropdown">
+        <div class="dropdown-toggle" id="dropdownToggle">Choose...</div>
+        <ul class="dropdown-menu" id="dropdownMenu"></ul>
+      </div>
+
+      <button class="go-btn" id="goBtn">Go</button>
+    </div>
+  </main>
+
+  <footer>
+    © 2025 Codio All Rights Reserved
+  </footer>
+
+  <script>
+    const visualizers = ['AVL', 'Red Black Trees', `BST`];
+    const sideList = document.getElementById('sideList');
+    const dropdown = document.getElementById('dropdown');
+    const toggle = document.getElementById('dropdownToggle');
+    const menu = document.getElementById('dropdownMenu');
+    const search = document.getElementById('search');
+    const goBtn = document.getElementById('goBtn');
+    let selected = null;
+
+    function renderSide(list) {
+      sideList.innerHTML = '';
+      list.forEach(name => {
+        const li = document.createElement('li');
+        li.textContent = name;
+        li.addEventListener('click', () => {
+          selectVisualizer(name);
+        });
+        sideList.appendChild(li);
+      });
+    }
+
+    function renderDropdown(list) {
+      menu.innerHTML = '';
+      list.forEach(name => {
+        const li = document.createElement('li');
+        li.textContent = name;
+        li.dataset.value = name;
+        li.addEventListener('click', () => selectVisualizer(name));
+        menu.appendChild(li);
+      });
+    }
+
+    function selectVisualizer(name) {
+      selected = name;
+      toggle.textContent = name;
+      document.querySelectorAll('.dropdown-menu li, .sidebar li').forEach(el => {
+        el.classList.toggle('active', el.textContent === name);
+      });
+      dropdown.classList.remove('open');
+    }
+
+    renderSide(visualizers);
+    renderDropdown(visualizers);
+
+    toggle.addEventListener('click', () => {
+      dropdown.classList.toggle('open');
+      search.focus();
+    });
+
+    search.addEventListener('input', () => {
+      const term = search.value.toLowerCase();
+      const filtered = visualizers.filter(v => v.toLowerCase().includes(term));
+      renderSide(filtered);
+      renderDropdown(filtered);
+    });
+
+    goBtn.addEventListener('click', () => {
+      if (selected) {
+        window.location.href = `visualizers/${encodeURIComponent(selected)}/`;
+      } else {
+        alert('Please select a visualizer.');
+      }
+    });
+
+    document.addEventListener('click', e => {
+      if (!dropdown.contains(e.target) && e.target !== toggle) {
+        dropdown.classList.remove('open');
+      }
+    });
+  </script>
+</body>
+</html>
