@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Recursion Visualizer</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, "Open Sans", "Helvetica Neue", sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background-color: #f4f7f9;
+            margin: 0;
+            padding: 20px;
+            color: #333;
+        }
+        #main-container {
+            width: 100%;
+            max-width: 900px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 20px;
+        }
+        #controls {
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 6px 12px rgba(0,0,0,0.08);
+            width: 100%;
+            box-sizing: border-box;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            align-items: center;
+            gap: 15px;
+        }
+        select, input[type="number"], button {
+            padding: 10px;
+            font-size: 16px;
+            border-radius: 6px;
+            border: 1px solid #ccc;
+        }
+        button {
+            cursor: pointer;
+            background-color: #28a745;
+            color: white;
+            border: none;
+            font-weight: bold;
+            transition: background-color 0.2s;
+        }
+        button:hover:not(:disabled) {
+            background-color: #218838;
+        }
+        button:disabled {
+            background-color: #a0a0a0;
+            cursor: not-allowed;
+        }
+        #speed-control {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        #visualization-container {
+            width: 100%;
+            display: flex;
+            gap: 20px;
+        }
+        #code-display, #call-stack-container {
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 6px 12px rgba(0,0,0,0.08);
+            flex-basis: 50%;
+        }
+        #code-display pre {
+            background-color: #2d333b;
+            color: #cdd9e5;
+            padding: 15px;
+            border-radius: 8px;
+            white-space: pre-wrap;
+            margin: 0;
+            font-size: 14px;
+        }
+        #code-display code .line {
+            display: block;
+            transition: background-color 0.3s;
+            padding: 2px 5px;
+            border-radius: 3px;
+        }
+        #code-display code .line.highlight {
+            background-color: #58a6ff;
+            color: #0d1117;
+        }
+        #call-stack {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            min-height: 400px;
+        }
+        .call-block {
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid;
+            transition: all 0.5s ease;
+            transform-origin: center;
+            opacity: 0;
+            transform: scale(0.8);
+        }
+        .call-block.active {
+            border-color: #58a6ff;
+            background-color: #eaf4ff;
+        }
+        .call-block.returned {
+            border-color: #34d058;
+            background-color: #e6ffed;
+        }
+        .call-block h4 {
+            margin: 0 0 10px 0;
+            font-size: 1.1em;
+        }
+        .call-block p {
+            margin: 5px 0;
+            font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, Courier, monospace;
+        }
+        #result-display {
+            font-size: 1.5em;
+            font-weight: bold;
+            padding: 15px;
+            background: #fff;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <div id="main-container">
+        <h1>Recursion Visualizer</h1>
+        <div id="controls">
+            <select id="language-select" onchange="updateCodeDisplay()">
+                <option value="javascript">JavaScript</option>
+                <option value="python">Python</option>
+                <option value="java">Java</option>
+                <option value="cpp">C++</option>
+            </select>
+            <select id="function-select" onchange="updateCodeDisplay()">
+                <option value="factorial">Factorial</option>
+                <option value="fibonacci">Fibonacci</option>
+            </select>
+            <input type="number" id="number-input" value="5" min="0" max="10">
+            <div id="speed-control">
+                <label for="speed-slider">Speed:</label>
+                <input type="range" id="speed-slider" min="50" max="1000" value="500" step="50">
+            </div>
+            <button id="visualize-btn" onclick="visualize()">Visualize</button>
+        </div>
+
+        <div id="visualization-container">
+            <div id="code-display">
+                <h3>Code</h3>
+                <pre><code id="code-block"></code></pre>
+            </div>
+            <div id="call-stack-container">
+                <h3>Call Stack</h3>
+                <div id="call-stack"></div>
+            </div>
+        </div>
+        <div id="result-display">Result will appear here</div>
+    </div>
+
+    <script>
+        // --- DOM Elements ---
+        const languageSelect = document.getElementById('language-select');
+        const functionSelect = document.getElementById('function-select');
+        const numberInput = document.getElementById('number-input');
+        const speedSlider = document.getElementById('speed-slider');
+        const visualizeBtn = document.getElementById('visualize-btn');
+        const codeBlock = document.getElementById('code-block');
+        const callStackDiv = document.getElementById('call-stack');
+        const resultDisplay = document.getElementById('result-display');
+
+        // --- Code Snippets for Different Languages ---
+        const code = {
+            javascript: {
+                factorial: `
+<span class="line" id="line-js-fact-0">function factorial(n) {</span>
+<span class="line" id="line-js-fact-1">  if (n === 0) {</span>
+<span class="line" id="line-js-fact-2">    return 1;</span>
+<span class="line" id="line-js-fact-3">  } else {</span>
+<span class="line" id="line-js-fact-4">    return n * factorial(n - 1);</span>
+<span class="line" id="line-js-fact-5">  }</span>
+<span class="line" id="line-js-fact-6">}</span>`,
+                fibonacci: `
+<span class="line" id="line-js-fib-0">function fibonacci(n) {</span>
+<span class="line" id="line-js-fib-1">  if (n <= 1) {</span>
+<span class="line" id="line-js-fib-2">    return n;</span>
+<span class="line" id="line-js-fib-3">  } else {</span>
+<span class="line" id="line-js-fib-4">    return fibonacci(n - 1) + fibonacci(n - 2);</span>
+<span class="line" id="line-js-fib-5">  }</span>
+<span class="line" id="line-js-fib-6">}</span>`
+            },
+            python: {
+                factorial: `
+<span class="line" id="line-python-fact-0">def factorial(n):</span>
+<span class="line" id="line-python-fact-1">  if n == 0:</span>
+<span class="line" id="line-python-fact-2">    return 1</span>
+<span class="line" id="line-python-fact-3">  else:</span>
+<span class="line" id="line-python-fact-4">    return n * factorial(n - 1)</span>`,
+                fibonacci: `
+<span class="line" id="line-python-fib-0">def fibonacci(n):</span>
+<span class="line" id="line-python-fib-1">  if n <= 1:</span>
+<span class="line" id="line-python-fib-2">    return n</span>
+<span class="line" id="line-python-fib-3">  else:</span>
+<span class="line" id="line-python-fib-4">    return fibonacci(n - 1) + fibonacci(n - 2)</span>`
+            },
+            java: {
+                factorial: `
+<span class="line" id="line-java-fact-0">public int factorial(int n) {</span>
+<span class="line" id="line-java-fact-1">  if (n == 0) {</span>
+<span class="line" id="line-java-fact-2">    return 1;</span>
+<span class="line" id="line-java-fact-3">  } else {</span>
+<span class="line" id="line-java-fact-4">    return n * factorial(n - 1);</span>
+<span class="line" id="line-java-fact-5">  }</span>
+<span class="line" id="line-java-fact-6">}</span>`,
+                fibonacci: `
+<span class="line" id="line-java-fib-0">public int fibonacci(int n) {</span>
+<span class="line" id="line-java-fib-1">  if (n <= 1) {</span>
+<span class="line" id="line-java-fib-2">    return n;</span>
+<span class="line" id="line-java-fib-3">  } else {</span>
+<span class="line" id="line-java-fib-4">    return fibonacci(n - 1) + fibonacci(n - 2);</span>
+<span class="line" id="line-java-fib-5">  }</span>
+<span class="line" id="line-java-fib-6">}</span>`
+            },
+            cpp: {
+                factorial: `
+<span class="line" id="line-cpp-fact-0">int factorial(int n) {</span>
+<span class="line" id="line-cpp-fact-1">  if (n == 0) {</span>
+<span class="line" id="line-cpp-fact-2">    return 1;</span>
+<span class="line" id="line-cpp-fact-3">  } else {</span>
+<span class="line" id="line-cpp-fact-4">    return n * factorial(n - 1);</span>
+<span class="line" id="line-cpp-fact-5">  }</span>
+<span class="line" id="line-cpp-fact-6">}</span>`,
+                fibonacci: `
+<span class="line" id="line-cpp-fib-0">int fibonacci(int n) {</span>
+<span class="line" id="line-cpp-fib-1">  if (n <= 1) {</span>
+<span class="line" id="line-cpp-fib-2">    return n;</span>
+<span class="line" id="line-cpp-fib-3">  } else {</span>
+<span class="line" id="line-cpp-fib-4">    return fibonacci(n - 1) + fibonacci(n - 2);</span>
+<span class="line" id="line-cpp-fib-5">  }</span>
+<span class="line" id="line-cpp-fib-6">}</span>`
+            }
+        };
+
+        let callCounter = 0;
+
+        // --- Core Visualization Logic ---
+        function sleep() {
+            const delay = 1050 - speedSlider.value;
+            return new Promise(resolve => setTimeout(resolve, delay));
+        }
+
+        function highlightLine(lineNum) {
+            document.querySelectorAll('.line').forEach(l => l.classList.remove('highlight'));
+            if (lineNum !== null) {
+                const lang = languageSelect.value;
+                const func = functionSelect.value;
+                const prefix = `line-${lang === 'javascript' ? 'js' : lang}`;
+                const funcPrefix = func === 'factorial' ? 'fact' : 'fib';
+                const fullId = `${prefix}-${funcPrefix}-${lineNum}`;
+                
+                const el = document.getElementById(fullId);
+                if (el) {
+                    el.classList.add('highlight');
+                }
+            }
+        }
+
+        function createCallBlock(id, text) {
+            const block = document.createElement('div');
+            block.id = `call-${id}`;
+            block.className = 'call-block active';
+            block.innerHTML = `<h4>${text}</h4><p class="status">Executing...</p>`;
+            callStackDiv.prepend(block);
+            setTimeout(() => {
+                block.style.opacity = '1';
+                block.style.transform = 'scale(1)';
+            }, 10);
+            return block;
+        }
+
+        function updateCallBlock(block, status, returnValue = null) {
+            block.querySelector('.status').innerHTML = status;
+            if (returnValue !== null) {
+                block.classList.remove('active');
+                block.classList.add('returned');
+            }
+        }
+
+        async function visualize() {
+            visualizeBtn.disabled = true;
+            callStackDiv.innerHTML = '';
+            resultDisplay.textContent = 'Calculating...';
+            callCounter = 0;
+            
+            const funcName = functionSelect.value;
+            const n = parseInt(numberInput.value);
+
+            if (funcName === 'fibonacci' && n > 10) {
+                 alert("Fibonacci for n > 10 can be very slow to visualize. Please choose a smaller number.");
+                 visualizeBtn.disabled = false;
+                 return;
+            }
+
+            const result = funcName === 'factorial' 
+                ? await visualFactorial(n) 
+                : await visualFibonacci(n);
+
+            resultDisplay.textContent = `Result: ${result}`;
+            highlightLine(null);
+            visualizeBtn.disabled = false;
+        }
+
+        // --- Factorial Visualization ---
+        async function visualFactorial(n) {
+            const callId = ++callCounter;
+            const block = createCallBlock(callId, `factorial(${n})`);
+            
+            await sleep();
+            highlightLine(1);
+            await sleep();
+
+            if (n === 0) {
+                highlightLine(2);
+                updateCallBlock(block, 'Base case met. Returning 1.', 1);
+                await sleep();
+                return 1;
+            } else {
+                highlightLine(4);
+                updateCallBlock(block, `Waiting for factorial(${n-1})...`);
+                await sleep();
+
+                const recursiveResult = await visualFactorial(n - 1);
+                
+                highlightLine(4);
+                updateCallBlock(block, `factorial(${n-1}) returned ${recursiveResult}.<br>Calculating ${n} * ${recursiveResult}...`);
+                await sleep();
+                
+                const result = n * recursiveResult;
+                updateCallBlock(block, `Returning ${result}.`, result);
+                await sleep();
+                
+                return result;
+            }
+        }
+
+        // --- Fibonacci Visualization ---
+        async function visualFibonacci(n) {
+            const callId = ++callCounter;
+            const block = createCallBlock(callId, `fibonacci(${n})`);
+
+            await sleep();
+            highlightLine(1);
+            await sleep();
+
+            if (n <= 1) {
+                highlightLine(2);
+                updateCallBlock(block, `Base case met. Returning ${n}.`, n);
+                await sleep();
+                return n;
+            } else {
+                highlightLine(4);
+                updateCallBlock(block, `Waiting for fibonacci(${n-1})...`);
+                await sleep();
+                
+                const res1 = await visualFibonacci(n - 1);
+                highlightLine(4);
+                updateCallBlock(block, `fibonacci(${n-1}) returned ${res1}.<br>Now waiting for fibonacci(${n-2})...`);
+                await sleep();
+
+                const res2 = await visualFibonacci(n - 2);
+                highlightLine(4);
+                updateCallBlock(block, `fibonacci(${n-2}) returned ${res2}.<br>Calculating ${res1} + ${res2}...`);
+                await sleep();
+
+                const result = res1 + res2;
+                updateCallBlock(block, `Returning ${result}.`, result);
+                await sleep();
+
+                return result;
+            }
+        }
+
+        // --- Initial Setup ---
+        function updateCodeDisplay() {
+            const lang = languageSelect.value;
+            const func = functionSelect.value;
+            codeBlock.innerHTML = code[lang][func];
+        }
+
+        window.onload = () => {
+            updateCodeDisplay();
+        };
+    </script>
+</body>
+</html>
