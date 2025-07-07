@@ -6,6 +6,7 @@ let start = false;
 
 function setup() {
   createCanvas(640, 480);
+  describe('Gray rectangle. Click on the canvas to see random bars of various sizes and colors. The insertion sort algorithm will sort the bars in ascending order.')
   for (let i = 0; i < width/barWidth; i++) {
     bars[i] = random(0, height);
   }
@@ -15,8 +16,8 @@ function draw() {
   colorMode(RGB);
   background(55);
   if (start == true) {
-  showBars(bars);
-  insertionSort();    
+    showBars(bars);
+    insertionSort();
   }
 }
 
